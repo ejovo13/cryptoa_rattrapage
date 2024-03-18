@@ -47,21 +47,46 @@ def miller_rabin_pretreatment(n: int) -> tuple[int, int]:
     return s, n
 
 
-def miller_rabin(z: int, number_trials: int) -> bool:
+def miller_rabin(n: int, number_trials: int) -> bool:
     """Test if a number is (probably) prime.
+
+    Adapted from https://en.wikipedia.org/wiki/Miller%E2%80%93Rabin_primality_test
 
     Parameters
     ----------
-    z : int
-        The integer for which we test primality
+    n : int
+        The integer for which we wish to test primality
     number_trials: int
         The number of rounds of testing to perform
 
     Returns
     -------
     bool
-        True if the integer z is probably prime
+        True if the integer z is _probably_ prime
+
+    Examples
+    --------
+    >>> miller_rabin(10, 5)
+    False
+    >>> miller_rabin(762515890128057700236061562369, 1)
+    True
+    >>> miller_rabin(93, 10)
+    False
+    >>> miller_rabin(97, 10)
+    True
     """
+    s, d = miller_rabin_pretreatment(n)
+    for _ in range(number_trials):
+        a = random.randint(2, n - 2)
+        x = pow(a, d, n)
+        for _ in range(s):
+            y = pow(x, 2, n)
+            if y == 1 and x != 1 and x != n - 1:
+                return False
+            x = y
+        if x != 1:
+            return False
+    return True
 
 
 f_3 = one_way_function_factory(3)
@@ -72,4 +97,6 @@ print(f_3(10, 10))
 # - figure out if p is prime
 
 
-
+big_prime = 762515890128057700236061562369
+print(miller_rabin_pretreatment(big_prime))
+print(miller_rabin(big_prime, 10))
