@@ -13,3 +13,14 @@ $ p =  "0x"&"d2bf071417608219223ad076131586a9" \
   z =  "0x"&"4520670aac4c7f5af9f86bed585d6066dcb73b9ec8c9b885" \
        &"36b46e252e64a1d28da6f8cf0d8bbf60fa6a4f8ee9854909"
 $
+
+
+=== Quick Reminders
+
+The multiplicative group of integers modulo $n$, written $bb(Z)_p^times$, is the set of integers coprime to $p$ from the set ${0, 1, .., n - 1}$
+
+
+==== Some examples
+
+- $bb(Z)_4^times = {1, 3}$
+- $bb(Z)_9^times = {1, 2, 4, 5, 7, 8}$
