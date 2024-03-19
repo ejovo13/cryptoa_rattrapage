@@ -24,3 +24,12 @@ The multiplicative group of integers modulo $n$, written $bb(Z)_p^times$, is the
 
 - $bb(Z)_4^times = {1, 3}$
 - $bb(Z)_9^times = {1, 2, 4, 5, 7, 8}$
+
+=== Problem
+
+We start by determining if $p$ is prime or not. It is indeed probably prime, according to a Miller-Rabin test with 100 trials.
+
+
+=== Visualization
+
+We can start playing around with the family of functions by using very simple visualizations. We do this to also get a feel for the geometric behavior of our function.
