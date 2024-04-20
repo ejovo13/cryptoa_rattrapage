@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "rattrapage"
+version = "0.1.0"
+description = ""
+authors = ["archstation <ejovo13@yahoo.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+polars = "^0.20.21"
+numpy = "^1.26.4"
+seaborn = "^0.13.2"
+altair = "^5.3.0"
+sympy = "^1.12"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

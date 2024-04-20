@@ -125,6 +125,18 @@ class NaturalNumber:
                 range(1, self.n)
             )
 
+    def y_inv_p3(self) -> Iterable[int]:
+        """Return the group Y^{-1}_{p^3} defined by the image of inv(y; p^3) for all y in Zp*."""
+        P3 = self.cubed()
+        return map(
+            lambda y: NaturalNumber(y).mul_inv(P3),
+            self.mul_group()
+        )
+
+    def y_inv_p3_list(self) -> list[int]:
+        return list(self.y_inv_p3())
+
+
     def mul_group_list(self) -> list[int]:
         return list(self.mul_group())
 
