@@ -20,9 +20,22 @@ def one_way_function_factory(p: int) -> Callable[[int, int], int]:
     """Generate the one-way function f_p, as defined in subject 7."""
     p_cubed = p * p * p
     def f_p(x: int, y: int) -> int:
-        return (x // y) % p_cubed
+        if x % y == 0:
+            assert isinstance(x // y, int), "Not an int!"
+            return (x // y) % p_cubed
+        else:
+            raise Exception(f"x: {x}, y: {y}, Not divisible")
 
     return f_p
+
+def modified_function_factory(p: int) -> Callable[[int, int], int]:
+    """Generate a new one-way function f_p := (x, y) |-> (x^y) mod p^3"""
+    p_cubed = p * p * p
+    def f_p(x: int, y: int) -> int:
+        return pow(x, y, p_cubed)
+
+    return f_p
+
 
 def miller_rabin_pretreatment(n: int) -> tuple[int, int]:
     """Compute two integers s and d such that n - 1 = 2**s * d.
@@ -128,7 +141,11 @@ def explore_fp(p: int) -> pl.DataFrame:
         for y in range(1, p_cubed):
             xs.append(x)
             ys.append(y)
-            fp.append(f_p(x, y))
+            try:
+                fp.append(f_p(x, y))
+            except Exception:
+                fp.append(None)
+                # raise Exception(f"x: {x}, y: {x}")
 
     return pl.DataFrame(dict(
         x=xs,
@@ -137,23 +154,132 @@ def explore_fp(p: int) -> pl.DataFrame:
     ))
 
 def visualize_fp(p: int) -> np.ndarray:
+    return visualize_factory(p, one_way_function_factory)
+
+def visualize_custom(p: int) -> np.ndarray:
+    return visualize_factory(p, modified_function_factory)
+
+import itertools
+
+def visualize_factory(p: int, factory: Callable[[int], Callable[[int, int], int]]):
     if p == 3:
         pass
-    elif not miller_rabin(p, 10):
-        raise NotPrimeError(p)
 
-    f_p = one_way_function_factory(p)
+    f_p = factory(p)
 
-    # Now we want to generate all possible inputs
-    p_cubed = p**3
+    fp = np.ones((p, p)) * np.nan
 
-    # xs = np.arange(1, p_cubed)
-    # ys = np.arange(1, p_cubed)
-    # xs, ys = np.meshgrid(xs, ys)
-    fp = np.zeros((p_cubed - 1, p_cubed - 1))
+    zn = multiplicative_integers_mod_n(p)
 
-    for i in range(1, p_cubed):
-        for j in range(1, p_cubed):
-            fp[i - 1, j - 1] = f_p(i, j)
+    for (i, j) in itertools.product(zn, zn):
+        try:
+            fp[i, j] = f_p(j, i)
+        except Exception:
+            fp[i, j] = np.nan
 
     return fp
+
+def get_map_as_tuples(p: int) -> list[tuple[int, int]]:
+    matrix = visualize_fp(p)
+    # p_cubed = p**3
+    # n = p
+    indices = []
+    for i in range(1, p):
+        for j in range(1, p):
+            if not np.isnan(matrix[i, j]):
+                indices.append((i, j))
+
+    return indices
+
+
+import seaborn
+
+def paint_custom(p: int):
+    return seaborn.heatmap(visualize_custom(p))
+
+def paint_fp(p: int):
+    return seaborn.heatmap(visualize_fp(p))
+
+def gcd(p: int, q: int) -> int:
+    # Euclids algorithm
+    while q != 0:
+        p, q = q, p % q
+    return p
+
+def iscoprime(a: int, b: int) -> bool:
+    return gcd(a, b) == 1
+
+def multiplicative_integers_mod_n(n: int) -> list[int]:
+    """Return Z_n^x."""
+    s = []
+    for i in range(n):
+        if iscoprime(n, i):
+            s.append(i)
+    return s
+
+
+def output_set_custom(p: int) -> set[int]:
+    s = set()
+    zn = multiplicative_integers_mod_n(p)
+    fp = modified_function_factory(p)
+    for (x, y) in itertools.product(zn, zn):
+        s.add(fp(x, y))
+    return s
+
+import polars as pl
+
+def f_df(p: int) -> pl.DataFrame:
+    data = visualize_fp(p)
+    xs = []
+    ys = []
+    zs = []
+    zn = multiplicative_integers_mod_n(p)
+
+    for (x, y) in itertools.product(zn, zn):
+        if not np.isnan(data[x, y]):
+            xs.append(x)
+            ys.append(y)
+            zs.append(int(data[x, y]))
+
+    return pl.DataFrame(dict(
+        x=xs,
+        y=ys,
+        z=zs
+    ))
+
+def custom_df(p: int) -> pl.DataFrame:
+    data = visualize_custom(p)
+    xs = []
+    ys = []
+    zs = []
+    zn = multiplicative_integers_mod_n(p)
+
+    for (x, y) in itertools.product(zn, zn):
+        xs.append(x)
+        ys.append(y)
+        zs.append(int(data[x, y]))
+
+    return pl.DataFrame(dict(
+        x=xs,
+        y=ys,
+        z=zs
+    ))
+
+def num_collisions_f(p: int) -> pl.DataFrame:
+    # determine the number of times we collide
+    collisions = 0
+    df = f_df(p)
+    s = set()
+    for i in df['z']:
+        if i in s:
+            collisions += 1
+        else:
+            s.add(i)
+    return collisions
+
+
+def custom_dist(p: int):
+    seaborn.histplot(custom_df(p), x='z')
+
+def f_dist(p: int):
+    seaborn.histplot(f_df(p), x='z')
