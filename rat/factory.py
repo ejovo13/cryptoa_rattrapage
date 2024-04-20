@@ -2,6 +2,10 @@
 
 from typing import Callable, Iterable
 from .number_theory import *
+import numpy as np
+import itertools
+import seaborn
+from functools import cached_property, cache
 
 class HashFn:
     """Implementation of schema 7."""
@@ -14,10 +18,18 @@ class HashFn:
         self.prime = miller_rabin(p, 15)
 
         if self.prime:
-            self.__call__ = fp_prime(p)
-        else:
-            self.__call__ = fp_composite(p)
 
+            def fn(x: int, y: int) -> int:
+                y_inv = self.inv_p3(y)
+                return self.mod_p3(x, y_inv)
+
+            self.fn = fn
+
+        else:
+            self.fn = fp_composite(p)
+
+    def __call__(self, x: int, y: int) -> int:
+        return self.fn(x, y)
 
     def multiplicative_group(self) -> Iterable[int]:
         """Return an _iterable_ across all elements in Zp*."""
@@ -29,6 +41,7 @@ class HashFn:
                 range(1, self.p)
             )
 
+    @cached_property
     def multiplicative_group_list(self) -> list[int]:
         """Return Zp* as a list."""
         return list(self.multiplicative_group())
@@ -42,8 +55,7 @@ class HashFn:
 
     def totient_p3(self) -> int:
         """Return the value of the totient function of p3."""
-        totient_p = self.totient_p()
-        return pow(totient_p, 2) * totient_p
+        return (self.p * self.p) * self.totient_p()
 
     def inv_p3(self, y: int) -> int:
         """Return the multiplicative inverse of y in Zp3*."""
@@ -53,8 +65,73 @@ class HashFn:
         """Return the image of self.inv_p3 for all p in Zp*."""
         return (self.inv_p3(y) for y in self.multiplicative_group())
 
+    def division_preimage(self) -> Iterable[int]:
+        """Return (Zn* x Y^{-1}_p^3)"""
+        zn = self.multiplicative_group_list
+        return itertools.product(zn, self.inv_p3_image())
+
+    def mod_p3(self, x, y_inv) -> int:
+        """Retrun x * yinv mod p3"""
+        return (x * y_inv) % self.p3
+
+    @cached_property
     def inv_p3_image_list(self) -> list[int]:
         return list(self.inv_p3_image())
+
+    @cached_property
+    def inv_p3_image_reverse_dict(self) -> dict[int, int]:
+        """Return the mapping y => yinv."""
+        mapping = {}
+        for y in self.multiplicative_group_list:
+            mapping[self.inv_p3(y)] = y
+
+        return mapping
+
+
+    def grid(self) -> np.ndarray:
+
+        FP = np.ones((self.p, self.p)) * np.nan
+        zn = self.multiplicative_group_list
+        for (i, j) in itertools.product(zn, zn):
+            FP[i, j] = self.__call__(j, i)
+
+        return FP
+
+    def paint(self):
+        return seaborn.heatmap(self.grid())
+
+    @cached_property
+    def image(self) -> set[int]:
+        r"""Return the image of this function for all (x, y) in Zp* \times Zp*."""
+        image = set()
+        for (i, j) in self.preimage():
+            image.add(self.__call__(j, i))
+
+        return image
+
+
+    def preimage(self) -> Iterable[tuple[int, int]]:
+        return itertools.product(self.multiplicative_group_list, self.multiplicative_group_list)
+
+    def preimage_list(self) -> list[tuple[int, int]]:
+        return list(self.preimage())
+
+    def cardinality_image(self) -> int:
+        """Return the number of elements in this functions image."""
+        return len(self.image)
+
+    def cardinality_preimage(self) -> int:
+        if self.prime:
+            return (self.p - 1) ** 2
+        else:
+            return len(self.preimage_list())
+
+    def rand(self) -> int:
+        """Sample from (Zn*, Zn*) and compute self(a, b). Only valid for prime p."""
+        x = random.randint(1, self.p - 1)
+        y = random.randint(1, self.p - 1)
+        return self(x, y)
+
 
 
 # ---------------------------------------------------------------------------- #
