@@ -2,6 +2,7 @@
 
 from sympy.ntheory import factorint
 import random
+import itertools
 
 def gcd(p: int, q: int) -> int:
     # Euclids algorithm
@@ -141,3 +142,7 @@ def gen_primes():
             del D[q]
 
         q += 1
+
+def first_n_primes(n: int) -> list[int]:
+    """Retrieve the first n primes."""
+    return list(itertools.islice(gen_primes(), n))

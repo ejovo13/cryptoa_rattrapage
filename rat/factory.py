@@ -10,12 +10,15 @@ from functools import cached_property, cache
 class HashFn:
     """Implementation of schema 7."""
 
-    def __init__(self, p: int):
+    def __init__(self, p: int, verified_prime: bool = False):
 
         self.p = p
         self.p3 = pow(p, 3)
 
-        self.prime = miller_rabin(p, 15)
+        if verified_prime:
+            self.prime = True
+        else:
+            self.prime = miller_rabin(p, 15)
 
         if self.prime:
 
@@ -131,6 +134,13 @@ class HashFn:
         x = random.randint(1, self.p - 1)
         y = random.randint(1, self.p - 1)
         return self(x, y)
+
+
+
+    def schwa7(self, bs: bytes) -> bytes:
+        """Hash function using schema 7."""
+
+
 
 
 
