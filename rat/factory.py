@@ -100,8 +100,11 @@ class HashFn:
 
         return FP
 
-    def paint(self):
-        return seaborn.heatmap(self.grid())
+    def paint(self, cbar: bool = True):
+        m = seaborn.heatmap(self.grid(), cbar=cbar)
+        m.set_xlabel('x')
+        m.set_ylabel('y')
+        return m.get_figure()
 
     @cached_property
     def image(self) -> set[int]:

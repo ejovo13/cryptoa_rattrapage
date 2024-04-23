@@ -86,7 +86,6 @@ def schwa7(p: int, bs: bytes) -> bytes:
     p3_bytes = n_bytes(p3)
 
     units = [schwa7_unit_int(p, int.from_bytes(bs)) for bs in split]
-    print(units)
     digest = units[0]
 
     for u in units[1:]:
