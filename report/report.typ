@@ -78,7 +78,7 @@ We start our analysis by getting aquainted with the different operations and spa
 
 ==== Domain, Codomain, Range
 
-The domain of $f_p$ is $bb(Z)_(p)^* times bb(Z)_(p)^*$ which has a cardinality of $(p - 1)(p - 1)$ for $p$ prime. The codomain, $bb(Z)_(p^3)$, has $(p^3 - 1)$ elements. Trivially, $f_p$ is not onto as there are more elements in the codomain than there are in the domain. Nor is $f_p$ one-to-one, as there exist multiple pairs of inputs that map to 1 (notably $x = y$).
+The domain of $f_p$ is $bb(Z)_(p)^* times bb(Z)_(p)^*$ which has a cardinality of $(p - 1)(p - 1)$ for $p$ prime. The codomain, $bb(Z)_(p^3)$, has $(p^3 - 1)$ elements. Trivially, $f_p$ is not a surjective function as the codomain is a much larger space than the domain. Nor is $f_p$ injective, as there exist multiple pairs of inputs that map to 1 (notably $x = y$).
 
 ==== Multiplicative Inverse
 
@@ -144,8 +144,71 @@ Take for example the function $f_5$ and the input value 14. We split#footnote("W
   [1101], [13], [4], [2], [2],
   [1110], [14], [4], [3], [43],
   [1111], [15], [4], [4], [1],
-
 )
 Note: We purposefully chose to have $y$ vary before $x$ so that the first $(p - 1)$ values of our hash function are $f_(p)(1, y) = y^(-1) mod p^3$ which has far more unpredictability than changing $x$ first and computing $f_(p)(x, 1) = x$.
 
 
+The above enumeration of $bb(Z)_p^* times bb(Z)_p^*$, while seemingly natural, is a completely arbitrary mapping. Any bijective permutation transforming our one-dimensional input ${0, 1, ..., p^2 - 2p}$#footnote($|bb(Z)_((p-1)(p-1))| = (p^2 - 2p + 1) "so the final element is " (p^2 - 2p + 1) -1 = p^2 - 2p$)
+to the domain if $f_p$ is suitable for implementing a hashing function with Schema 7 as its basis. However, not all enumerations are equal. In fact, as we have already mentioned, we chose to increment $y$ before $x$ in order to get more "randomness" for the first $p - 1$ inputs.
+
+Such an enumeration would yield:
+#table(
+  columns: (auto, auto, auto, auto, auto),
+  inset: 10pt,
+  align: horizon,
+  table.header(
+    [binary], [decimal], [x], [y], [$f_(5)(x, y)$],
+  ),
+  [0000], [0], [1], [1], [1],
+  [0001], [1], [2], [1], [2],
+  [0010], [2], [3], [1], [3],
+  [0011], [3], [4], [1], [4],
+)
+
+Geometrically, the chosen enumeration traverses the 2 dimensional grid by descending along the left-hand side
+
+#let h = 110pt
+
+#box(height: 180pt,
+columns(2, gutter: 10pt)[
+   #image("./assets/fn11_vert.png", height: h) #align(center)[incrementing $y$ first],
+   #image("./assets/fn11_horz.png", height: h) #align(center)[incrementing $x $ first]
+ ]
+)
+
+==== Extending to variable-length input
+
+The final step to implementing schema 7 as the hash function $"schwa7"$ is to open up the co-domain from a fixed input size to accepting inputs of any length.
+
+To achieve this end, we apply a similar transformation as before and break down our input, $m in {0, 1}^*$, into smaller, fixed-sized chunks. Only this time we break our input into as many subcomponents - base $p - 1$ digits - as needed.
+
+Mathematically, we decompose:
+
+$ {0, 1}^n ->  product_i^k bb(Z)_(p)^* $
+
+where $n$ is the bit length of the input value and $k$ is the number of $(p - 1)$-radix digits needed to represent our input. This is once again an arbitrary - albeit natural - transformation.
+
+To avoid being overly formal, let's briefly examine a concrete example. Take $p =5$ and let's use an input value of 17. With 4 as our radix, we have:
+
+$ 17 = 1 * 4^2 + 0 * 4^1 + 1 * 4^0 $
+
+As before, we add $1$ to each base-$(p - 1)$ digit in order to yield a sequence of values in $bb(Z)_p^*$:
+
+$ 17 arrow.bar.r [2, 1, 2] $
+
+All that's left to do is condense the sequence of $m_i in bb(Z)_p^*$ into a single value. Consider the following condensing function:
+
+$ phi : bb(Z)_p^* times bb(Z)_p^* &-> bb(Z)_p^* \
+  (x, y) &arrow.bar (f_(p)(x, y) mod p - 1) + 1
+$
+
+We can use repeated calls to $phi$ in order to combine the elements of our sequence, internally using $f_p$ as our indexing function. We perform this reduction with the following recursive function:
+
+
+
+1. For input $m = [m_0, m_1, ..., m_(k - 1), m_k]$, reduce $m$ using repeated applications of $phi$:
+
+*input*: $m = [m_0, m_1, ..., m_(k - 1), m_k ]$
+
+$ [m_0, m_1, ..., phi(m_(k-1), m_k)]$
+2.

@@ -3,12 +3,12 @@
 from __future__ import annotations
 
 from typing import Callable, Iterable
-from .prototype import iscoprime, miller_rabin, multiplicative_integers_mod_n
 import itertools
 import numpy as np
 import seaborn
 import polars as pl
 import altair as alt
+from .number_theory import miller_rabin, miller_rabin_pretreatment, totient, totient_prime_power, iscoprime
 
 def fp_prime(p: int) -> Callable[[int, int], int]:
     """Function factory for f: (x, y) ==> x / y mod p^3"""
