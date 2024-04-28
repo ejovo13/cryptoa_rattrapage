@@ -1,5 +1,6 @@
 from ..hash import *
-
+import pytest
+from ..number_theory import nth_prime
 
 import random
 
@@ -15,19 +16,25 @@ def test_ints_to_bytes():
         v_recreated = int.from_bytes(v_as_bytes)
         assert v_recreated == v
 
-def test_split():
+@pytest.mark.parametrize('p', [nth_prime(7), 5])
+def test_split(p: int):
 
-    s = Schwa(5)
+    n = (p - 1) * (p - 1)
 
-    for i in range(16):
-        ic(s.split_bytes_to_int(i.to_bytes(20)))
-        # ic(s.split_int(i))
-    for i in range(16):
-        ic(s.split_int(i))
+    s = Schwa(p)
+
+    # for i in range(16):
+    #     ic(s.split_bytes_to_int(i.to_bytes(20)))
+    #     # ic(s.split_int(i))
+    # for i in range(16):
+    #     ic(s.split_int(i))
     # Figure out why split int is behaving so weirdly.
 
-    for i in range(16):
+    for i in range(n):
         ic(s(i))
+
+
+
 
     ic(s.suprememum())
 

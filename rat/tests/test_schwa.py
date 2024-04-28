@@ -4,7 +4,7 @@ from ..hash import *
 
 def test_schwa():
 
-    p = 7
+    p = 5
     ic(schwa7_txt(p, ''))
 
     def print_schwa(p: int, s: str):

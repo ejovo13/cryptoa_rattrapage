@@ -14,6 +14,7 @@ class HashFn:
 
         self.p = p
         self.p3 = pow(p, 3)
+        self.pp2 = (p - 1) * (p - 1)
 
         if verified_prime:
             self.prime = True

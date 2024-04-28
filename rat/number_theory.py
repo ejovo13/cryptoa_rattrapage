@@ -146,3 +146,19 @@ def gen_primes():
 def first_n_primes(n: int) -> list[int]:
     """Retrieve the first n primes."""
     return list(itertools.islice(gen_primes(), n))
+
+def nth_prime(n: int) -> int:
+    return first_n_primes(n)[-1]
+
+def sample_probable_prime(bit_length: int, number_trials: int) -> int:
+    """Sample a random integer with a specified bit length that is probably prime."""
+    a = 1 << (bit_length  - 1)
+    b = (1 << bit_length) - 1
+
+    while True:
+        z = random.randint(a, b)
+        if miller_rabin(z, number_trials):
+            return z
+        else:
+            continue
+

@@ -2,6 +2,13 @@
 
 from .factory import HashFn
 from dataclasses import dataclass
+import numpy as np
+from .ascii import schwa_text
+import seaborn
+
+import logging
+
+# logging.basicConfig(level=logging.INFO)
 
 
 class Schwa:
@@ -20,6 +27,27 @@ class Schwa:
         """Call the schwa hash function."""
         return self.hash(n)
 
+    def __str__(self) -> str:
+
+        p_str = ' [prime \u2713]' if self.fn.prime else ''
+
+        return schwa_text + f"\np: {self.fn.p}{p_str}\np3: {self.fn.p3}\n\nbit length p:\t\t{self.bit_length_p()} [{self.byte_length_p()}B]\nbit length output:\t{self.suprememum().bit_length()} [{self.byte_length_out()}B]"
+
+    def bit_length_p(self) -> int:
+        """Return the bit length of p."""
+        return self.fn.p.bit_length()
+
+    def bit_length_out(self) -> int:
+        """Return the bit length of the output."""
+        return self.suprememum().bit_length()
+
+    def byte_length_p(self) -> int:
+        """Return the minimum number of bytes needed to represent p."""
+        return n_bytes(self.fn.p)
+
+    def byte_length_out(self) -> int:
+        return n_bytes(self.suprememum())
+
     def split_bytes_to_int(self, bs: bytes) -> list[int]:
         return [n + 1 for n in split_bytes_to_int(bs, self.fn.p - 1)]
 
@@ -28,7 +56,7 @@ class Schwa:
 
     def condense(self, x: int, y: int) -> int:
         """Use f_p to condense (x, y) -> f_p(x, y) mod (p - 1) + 1"""
-        return (self.fn(x, y) % (p - 1)) + 1
+        return (self.fn(x, y) % (self.fn.p - 1)) + 1
 
     def condense_ints(self, ints: list[int]) -> tuple[int, int]:
         """Reduce a list of ints"""
@@ -37,25 +65,60 @@ class Schwa:
         if n == 2: return ints[0], ints[1]
 
         acc = self.condense(ints[0], ints[1])
+        # acc = (0xfeeb % (self.p - 1)) + 1
+        # for i in range(n - 1):
         for i in range(2, n - 1):
             acc = self.condense(acc, ints[i])
 
         return acc, ints[-1]
 
+    def salt(self) -> int:
+        """Return a salt to prefix all of our hashes that's always in Z_p^*."""
+        return (0xbeeeeeeeffeeeeeeeeed % (self.fn.p - 1)) + 1
+
+
     def hash(self, n: int) -> int:
         ints = self.split_int(n)
+        ints.insert(0, self.salt())
         x, y = self.condense_ints(ints)
         return self.fn(x, y)
 
     def hash_bytes(self, bs: bytes) -> bytes:
         ints = self.split_bytes_to_int(bs)
+        ints.insert(0, self.salt())
         x, y = self.condense_ints(ints)
-        return self.fn(x, y)
+        digest_int = self.fn(x, y)
+        return digest_int.to_bytes(n_bytes(digest_int))
+
+    def hash_str(self, s: str) -> bytes:
+        """Hash an input string, encoded using utf-8."""
+        digest = self.hash_bytes(s.encode(encoding="utf-8"))
+        return hex(int.from_bytes(digest))[2:]
 
     def suprememum(self) -> int:
         """Return the maximum value obtained."""
         return self.fn.p3 - 1
 
+    def boolean_map(self) -> np.ndarray[bool]:
+
+
+        list_arrays = [int_to_boolean(self.hash(i)) for i in range(self.fn.pp2)]
+
+        # Convert our list of arrays to a numpy matrix
+        out_matrix = np.zeros((self.fn.pp2, self.fn.p3.bit_length()), dtype=int)
+
+        for i, array in enumerate(list_arrays):
+            out_matrix[i,-len(array):] = np.array(array, dtype=int)
+
+        return out_matrix
+
+    def paint(self):
+        return seaborn.heatmap(self.boolean_map(), cbar=False, cmap=['black', 'white'])
+
+
+def int_to_boolean(i: int) -> np.ndarray[bool]:
+    # return np.array([1 if c == '1' else 0 for c in bin(i)[2:]], dtype=int)
+    return np.array([c == '1' for c in bin(i)[2:]], dtype=bool)
 
 def bytes_to_zp(p: int, bs: bytes) -> int:
     """Convert bytes to an element in Zp*, assuming that p is prime."""
