@@ -61,6 +61,7 @@ class Schwa:
     def condense_ints(self, ints: list[int]) -> tuple[int, int]:
         """Reduce a list of ints"""
         n = len(ints)
+        if n == 0: return
         if n == 1: return 1, ints[0]
         if n == 2: return ints[0], ints[1]
 
@@ -76,12 +77,17 @@ class Schwa:
         """Return a salt to prefix all of our hashes that's always in Z_p^*."""
         return (0xbeeeeeeeffeeeeeeeeed % (self.fn.p - 1)) + 1
 
+    def salts(self) -> list[int]:
+        return [self.salt(), self.fn.inv_p(self.salt())]
 
-    def hash(self, n: int) -> int:
+
+    def hash(self, n: int, salt: bool = True) -> int:
         ints = self.split_int(n)
-        ints.insert(0, self.salt())
+        if salt:
+            ints.insert(0, self.salt())
+            ints.insert(0, self.fn.inv_p3(self.salt()))
         x, y = self.condense_ints(ints)
-        return self.fn(x, y)
+        return self.fn.fn_p3(x, y)
 
     def hash_bytes(self, bs: bytes) -> bytes:
         ints = self.split_bytes_to_int(bs)
@@ -99,10 +105,10 @@ class Schwa:
         """Return the maximum value obtained."""
         return self.fn.p3 - 1
 
-    def boolean_map(self) -> np.ndarray[bool]:
+    def boolean_map(self, salt: bool = True) -> np.ndarray[bool]:
 
 
-        list_arrays = [int_to_boolean(self.hash(i)) for i in range(self.fn.pp2)]
+        list_arrays = [int_to_boolean(self.hash(i, salt)) for i in range(self.fn.pp2)]
 
         # Convert our list of arrays to a numpy matrix
         out_matrix = np.zeros((self.fn.pp2, self.fn.p3.bit_length()), dtype=int)
@@ -112,8 +118,8 @@ class Schwa:
 
         return out_matrix
 
-    def paint(self):
-        return seaborn.heatmap(self.boolean_map(), cbar=False, cmap=['black', 'white'])
+    def paint(self, salt: bool = True):
+        return seaborn.heatmap(self.boolean_map(salt), cbar=False, cmap=['black', 'white'])
 
 
 def int_to_boolean(i: int) -> np.ndarray[bool]:

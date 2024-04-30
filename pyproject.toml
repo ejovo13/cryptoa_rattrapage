@@ -22,7 +22,7 @@ faker = "^24.14.0"
 pytest = "^8.1.1"
 
 [tool.poetry.scripts]
-schwa7 = 'rat.cli:main'
+schwa7 = 'crypto_rat.cli:main'
 
 [build-system]
 requires = ["poetry-core"]

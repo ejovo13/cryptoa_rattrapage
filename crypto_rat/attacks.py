@@ -12,7 +12,7 @@ def exhaustive_attack(z: int, p: int) -> list[tuple[int, int]]:
 
     # Now let's iterate through all possible inputs.
     for (x, y) in fn.preimage():
-        print(x, y, fn(x, y))
+        # print(x, y, fn(x, y))
 
         if fn(x, y) == z:
             out.append((x, y))

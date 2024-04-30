@@ -16,18 +16,23 @@ class HashFn:
         self.p3 = pow(p, 3)
         self.pp2 = (p - 1) * (p - 1)
 
-        if verified_prime:
+        if verified_prime or p == 3:
             self.prime = True
         else:
             self.prime = miller_rabin(p, 15)
 
         if self.prime:
 
-            def fn(x: int, y: int) -> int:
+            def fn_p3(x: int, y: int) -> int:
                 y_inv = self.inv_p3(y)
                 return self.mod_p3(x, y_inv)
 
-            self.fn = fn
+            def fn_p(x: int, y: int) -> int:
+                y_inv = self.inv_p(y)
+                return self.mod_p3(x, y_inv)
+
+            self.fn_p3 = fn_p3
+            self.fn = fn_p
 
         else:
             self.fn = fp_composite(p)
@@ -65,9 +70,17 @@ class HashFn:
         """Return the multiplicative inverse of y in Zp3*."""
         return modular_inverse(self.totient_p3(), y, self.p3)
 
+    def inv_p(self, y: int) -> int:
+        """Return the multiplicative inverse of y in Zp*."""
+        return modular_inverse(self.p - 1, y, self.p)
+
     def inv_p3_image(self) -> Iterable[int]:
         """Return the image of self.inv_p3 for all p in Zp*."""
         return (self.inv_p3(y) for y in self.multiplicative_group())
+
+    def inv_p_image(self) -> Iterable[int]:
+        """Return the image of self.inv_p for all p in Zp*."""
+        return (self.inv_p(y) for y in self.multiplicative_group())
 
     def division_preimage(self) -> Iterable[int]:
         """Return (Zn* x Y^{-1}_p^3)"""
@@ -77,6 +90,10 @@ class HashFn:
     def mod_p3(self, x, y_inv) -> int:
         """Retrun x * yinv mod p3"""
         return (x * y_inv) % self.p3
+
+    @cached_property
+    def inv_p_image_list(self) -> list[int]:
+        return list(self.inv_p_image())
 
     @cached_property
     def inv_p3_image_list(self) -> list[int]:
@@ -101,11 +118,36 @@ class HashFn:
 
         return FP
 
-    def paint(self, cbar: bool = True):
+    def grid_p3(self) -> np.ndarray:
+
+        FP = np.ones((self.p, self.p)) * np.nan
+        zn = self.multiplicative_group_list
+        for (i, j) in itertools.product(zn, zn):
+            FP[i, j] = self.fn_p3(j, i)
+
+        return FP
+
+    def paint(self, cbar: bool = True, save: bool = True):
         m = seaborn.heatmap(self.grid(), cbar=cbar)
         m.set_xlabel('x')
         m.set_ylabel('y')
-        return m.get_figure()
+        fig = m.get_figure()
+        if save:
+            title = f"f_{self.p}.png"
+            fig.savefig(title)
+
+        return fig
+
+    def paint_p3(self, cbar: bool = True, save: bool = True):
+        m = seaborn.heatmap(self.grid_p3(), cbar=cbar)
+        m.set_xlabel('x')
+        m.set_ylabel('y')
+        fig = m.get_figure()
+        if save:
+            title = f"f_{self.p}_3.png"
+            fig.savefig(title)
+
+        return fig
 
     @cached_property
     def image(self) -> set[int]:
